@@ -76,10 +76,23 @@
         <el-form-item label="手机号" prop="phone">
           <el-input v-model="userForm.phone" placeholder="请输入手机号" />
         </el-form-item>
-        <el-form-item label="头像URL" prop="avatarUrl">
-          <el-input v-model="userForm.avatarUrl" placeholder="请输入头像URL" />
-          <div class="avatar-preview" v-if="userForm.avatarUrl">
-            <el-avatar :size="60" :src="userForm.avatarUrl"></el-avatar>
+        <el-form-item label="头像" prop="avatarUrl">
+          <div class="avatar-upload-container">
+            <el-avatar :size="80" :src="userForm.avatarUrl || defaultAvatar" class="avatar-preview">
+              {{ userForm.nickname && userForm.nickname.substring(0, 1).toUpperCase() }}
+            </el-avatar>
+            <div class="avatar-actions">
+              <el-upload
+                class="avatar-uploader"
+                action="#"
+                :http-request="uploadAvatar"
+                :show-file-list="false"
+                :before-upload="beforeAvatarUpload"
+              >
+                <el-button type="primary" size="small" :loading="avatarUploading">选择图片</el-button>
+              </el-upload>
+              <div class="avatar-tip">推荐尺寸: 200x200px，支持jpg、png格式</div>
+            </div>
           </div>
         </el-form-item>
       </el-form>
@@ -100,11 +113,22 @@ import { ref, onMounted, reactive, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '../store/user'
-import { getCurrentUser, updateUserInfoService } from "../api/user.js"
+import { getCurrentUser, updateUserInfoService, uploadAvatar as uploadAvatarApi } from "../api/user.js"
 import { formatDate } from '../utils/videoUtils'
 
 const router = useRouter()
 const userStore = useUserStore()
+
+// 默认头像
+const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+
+// 头像上传相关变量
+const avatarUploading = ref(false)
+const uploadHeaders = computed(() => {
+  return {
+    Authorization: localStorage.getItem('token') || ''
+  }
+})
 
 // 响应式屏幕宽度
 const screenWidth = ref(window.innerWidth)
@@ -211,6 +235,51 @@ const userFormRules = {
   phone: [
     { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
   ]
+}
+
+// 自定义上传头像
+const uploadAvatar = async (options) => {
+  const file = options.file
+  
+  try {
+    avatarUploading.value = true
+    const response = await uploadAvatarApi(file)
+    
+    if (response.success) {
+      userForm.avatarUrl = response.data.avatarUrl
+      // 更新本地显示的用户信息
+      userInfo.value.avatarUrl = response.data.avatarUrl
+      // 更新store中的用户信息
+      userStore.updateUserInfo({
+        avatarUrl: response.data.avatarUrl
+      })
+      ElMessage.success('头像上传成功')
+    } else {
+      ElMessage.error(response.message || '头像上传失败')
+    }
+  } catch (error) {
+    console.error('头像上传失败:', error)
+    ElMessage.error('头像上传失败，请稍后重试')
+  } finally {
+    avatarUploading.value = false
+  }
+}
+
+// 头像上传前检查
+const beforeAvatarUpload = (file) => {
+  const isJPG = file.type === 'image/jpeg'
+  const isPNG = file.type === 'image/png'
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isJPG && !isPNG) {
+    ElMessage.error('头像图片只能是JPG或PNG格式!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('头像图片大小不能超过2MB!')
+    return false
+  }
+  return true
 }
 
 //获取用户信息
@@ -408,10 +477,27 @@ onMounted(() => {
   flex-grow: 1;
 }
 
-.avatar-preview {
-  margin-top: 10px;
+.avatar-upload-container {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.avatar-preview {
+  border: 1px solid #eee;
+  background-color: #f5f7fa;
+}
+
+.avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.avatar-tip {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
 }
 
 /* 响应式样式 */

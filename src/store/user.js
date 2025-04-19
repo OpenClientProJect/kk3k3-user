@@ -150,7 +150,12 @@ export const useUserStore = defineStore('user', () => {
 
   // 更新用户信息
   function updateUserInfo(userData) {
-    if (userData) {
+    if (userData && user.value) {
+      // 合并现有用户信息和新信息
+      user.value = { ...user.value, ...userData };
+      // 更新localStorage
+      localStorage.setItem('user', JSON.stringify(user.value));
+    } else if (userData) {
       user.value = userData;
       localStorage.setItem('user', JSON.stringify(userData));
     }

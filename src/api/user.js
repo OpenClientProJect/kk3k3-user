@@ -137,3 +137,35 @@ export function isSubscribed(targetUserId) {
   });
 }
 
+/**
+ * 获取用户的粉丝数
+ * @param {number} userId - 用户ID
+ * @returns {Promise} 响应结果
+ */
+export function getSubscriberCount(userId) {
+  return request({
+    url: `/api/user/${userId}/subscriber-count`,
+    method: 'get'
+  })
+}
+
+/**
+ * 上传用户头像
+ * @param {File} file - 头像图片文件
+ * @returns {Promise} 响应结果
+ */
+export function uploadAvatar(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  return request({
+    url: '/api/user/avatar/upload',
+    method: 'post',
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    },
+    withCredentials: true,
+    data: formData
+  })
+}
+
