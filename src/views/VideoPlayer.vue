@@ -27,7 +27,6 @@
                 class="video-player"
                 :src="video.videoUrl"
                 :poster="video.coverUrl || 'https://via.placeholder.com/1280x720'"
-                @play="handleVideoPlay"
             ></video>
           </div>
 
@@ -189,12 +188,7 @@ import {ref, onMounted, computed, watch} from 'vue'
 import {useRouter, useRoute} from 'vue-router'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {Star, Share} from '@element-plus/icons-vue'
-import {getVideoDetail, incrementViews, likeVideo,  getLatestVideos} from '../api/video'
-import {
-  subscribeUser,
-  unsubscribeUser,
-  isSubscribed as checkIsSubscribed,
-} from '../api/user'
+import {getVideoDetail,  getLatestVideos} from '../api/video'
 import {useUserStore} from '../store/user'
 import {getVideoComments, postComment, deleteComment, replyComment, likeComment as likeCommentApi} from '../api/comment'
 
@@ -203,8 +197,6 @@ const route = useRoute()
 const userStore = useUserStore()
 const videoPlayer = ref(null)
 const loading = ref(true)
-const uploaderAvatar = ref('https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png') // 默认头像
-const uploaderSubscribers = ref(0) // 作者关注人数
 const isSubscribed = ref(false) // 是否已关注
 const likeClicked = ref(false) // 是否已点赞
 const video = ref({
@@ -320,19 +312,6 @@ const loadRelatedVideos = async () => {
     }
   } catch (error) {
     console.error('加载相关视频失败:', error)
-  }
-}
-
-// 处理视频播放
-const handleVideoPlay = async () => {
-  if (!viewIncremented.value && video.value.id) {
-    try {
-      await incrementViews(video.value.id)
-      viewIncremented.value = true
-      video.value.views++
-    } catch (error) {
-      console.error('增加播放次数失败:', error)
-    }
   }
 }
 
@@ -639,47 +618,7 @@ watch(
     }
 )
 
-// 监听登录状态变化
-watch(
-    () => userStore.isLoggedIn,
-    (newLoginState) => {
-      if (video.value.userId && newLoginState) {
-        console.log('登录状态变化，重新检查订阅状态');
-        // 检查订阅状态
-        checkSubscriptionStatus();
-      }
-    }
-)
 
-// 检查订阅状态
-const checkSubscriptionStatus = async () => {
-  if (!isLoggedIn.value || !video.value.userId) return;
-
-  try {
-    const subscriptionResponse = await checkIsSubscribed(video.value.userId);
-    if (subscriptionResponse.success) {
-      isSubscribed.value = subscriptionResponse.data;
-    }
-  } catch (error) {
-    console.error('检查订阅状态失败:', error);
-    // 错误处理：设置默认值为未订阅
-    isSubscribed.value = false;
-  }
-}
-
-// 监听token变化
-watch(
-    () => userStore.token,
-    (newToken) => {
-      if (video.value.userId && newToken) {
-        console.log('认证Token变化，重新检查订阅状态');
-        // 延迟一小段时间再重新检查，确保token已经被设置到headers中
-        setTimeout(() => {
-          checkSubscriptionStatus();
-        }, 500);
-      }
-    }
-)
 </script>
 
 <style scoped>

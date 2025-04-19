@@ -44,8 +44,6 @@
             :size="screenWidth < 768 ? 'small' : 'default'">
             <el-descriptions-item label="用户名">{{ userInfo.username }}</el-descriptions-item>
             <el-descriptions-item label="昵称">{{ userInfo.nickname || '未设置' }}</el-descriptions-item>
-            <el-descriptions-item label="邮箱">{{ userInfo.email || '未设置' }}</el-descriptions-item>
-            <el-descriptions-item label="手机号">{{ userInfo.phone || '未设置' }}</el-descriptions-item>
             <el-descriptions-item label="注册时间" :span="2">{{ formatDate(userInfo.createTime) }}</el-descriptions-item>
             <el-descriptions-item label="上次更新" :span="2">{{ formatDate(userInfo.updateTime) }}</el-descriptions-item>
           </el-descriptions>
@@ -69,12 +67,6 @@
       >
         <el-form-item label="昵称" prop="nickname">
           <el-input v-model="userForm.nickname" placeholder="请输入昵称" />
-        </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="userForm.email" placeholder="请输入邮箱" />
-        </el-form-item>
-        <el-form-item label="手机号" prop="phone">
-          <el-input v-model="userForm.phone" placeholder="请输入手机号" />
         </el-form-item>
         <el-form-item label="头像" prop="avatarUrl">
           <div class="avatar-upload-container">
