@@ -14,8 +14,7 @@
       
       <!-- 导航菜单项 -->
       <el-menu-item index="/">首页</el-menu-item>
-      <el-menu-item index="/dynamic">动态</el-menu-item>
-      
+
       <!-- 搜索框 -->
       <div class="search-container">
         <el-input

@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import VideoPlayer from '../views/VideoPlayer.vue'
 import Profile from '../views/Profile.vue'
-import Dynamic from '../views/Dynamic.vue'
 import SearchResults from '../views/SearchResults.vue'
 
 const router = createRouter({
@@ -24,11 +23,6 @@ const router = createRouter({
       name: 'profile',
       component: Profile,
       meta: { requiresAuth: true }
-    },
-    {
-      path: '/dynamic',
-      name: 'dynamic',
-      component: Dynamic
     },
     {
       path: '/search',
