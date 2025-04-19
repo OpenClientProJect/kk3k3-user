@@ -6,126 +6,90 @@
           <el-skeleton animated>
             <template #template>
               <div class="video-skeleton">
-                <el-skeleton-item variant="rect" style="width: 100%; height: 500px;" />
+                <el-skeleton-item variant="rect" style="width: 100%; height: 500px;"/>
                 <div style="padding: 14px;">
-                  <el-skeleton-item variant="h3" style="width: 50%;" />
+                  <el-skeleton-item variant="h3" style="width: 50%;"/>
                   <div style="display: flex; align-items: center; margin-top: 16px;">
-                    <el-skeleton-item variant="text" style="margin-right: 16px;" />
-                    <el-skeleton-item variant="text" style="width: 30%;" />
+                    <el-skeleton-item variant="text" style="margin-right: 16px;"/>
+                    <el-skeleton-item variant="text" style="width: 30%;"/>
                   </div>
                 </div>
               </div>
             </template>
           </el-skeleton>
         </div>
-        
-        <div v-else>
-        <div class="video-container">
-          <video
-              ref="videoPlayer"
-            controls
-            class="video-player"
-              :src="video.videoUrl"
-              :poster="video.coverUrl || 'https://via.placeholder.com/1280x720'"
-              @play="handleVideoPlay"
-          ></video>
-        </div>
 
-        <div class="video-details">
+        <div v-else>
+          <div class="video-container">
+            <video
+                ref="videoPlayer"
+                controls
+                class="video-player"
+                :src="video.videoUrl"
+                :poster="video.coverUrl || 'https://via.placeholder.com/1280x720'"
+                @play="handleVideoPlay"
+            ></video>
+          </div>
+
+          <div class="video-details">
             <h1>{{ video.title }}</h1>
-          <p class="video-stats">
-              <span>{{ formatNumber(video.views) }} 次观看</span>
-              <span>{{ formatDate(video.createTime) }}</span>
-          </p>
-          <el-divider />
-            
-            <div class="author-info" v-if="video.uploaderName !== '未知上传者'">
-              <div class="author-avatar-container">
-                <el-avatar :size="50" :src="uploaderAvatar" />
-              </div>
-              <div class="author-details">
-                <h3 class="author-name" style="cursor: pointer">{{ video.uploaderName }}</h3>
-                <p class="upload-date">上传于 {{ formatDate(video.createTime) }}</p>
-                <p v-if="uploaderSubscribers" class="subscriber-count">{{ formatNumber(uploaderSubscribers) }} 位关注者</p>
-              </div>
-              <div class="video-actions">
-                <el-button 
-                  type="danger" 
-                  :icon="Star" 
-                  @click="handleLikeVideo"
-                  :disabled="likeClicked">
-                  {{ formatNumber(video.likes) }} 赞
-                </el-button>
-                <el-button 
-                  type="primary" 
-                  @click="handleSubscribe"
-                  :disabled="!isLoggedIn || isCurrentUser">
-                  {{ isSubscribed ? '已关注' : '关注' }}
-                </el-button>
-                <el-button 
-                  type="default" 
-                  :icon="Share" 
+            <div class="video-info-row">
+              <p class="video-stats">
+                <span>发布日期：{{ formatDate(video.createTime) }}</span>
+              </p>
+              <div class="video-actions-simple">
+                <el-button
+                  type="primary"
+                  :icon="Share"
+                  size="small"
+                  plain
                   @click="handleShareVideo">
                   分享
                 </el-button>
               </div>
             </div>
-            
-            <!-- 简化版本的操作区域，当没有上传者信息时显示 -->
-            <div class="video-actions-simple" v-else>
-              <el-button 
-                type="danger" 
-                :icon="Star" 
-                @click="handleLikeVideo"
-                :disabled="likeClicked">
-                {{ formatNumber(video.likes) }} 赞
-              </el-button>
-              <el-button 
-                type="default" 
-                :icon="Share" 
-                @click="handleShareVideo">
-                分享
-              </el-button>
-            </div>
-            
-            <el-divider />
-            <p class="video-description">{{ video.description }}</p>
+
+            <el-divider/>
+
+            <p class="video-description">简介：{{ video.description }}</p>
             <p v-if="video.tags" class="video-tags">
               <el-tag v-for="tag in getTagList(video.tags)" :key="tag" size="small" effect="plain" class="tag">
-                {{ tag }}
+                标签： {{ tag }}
               </el-tag>
             </p>
           </div>
 
           <div class="comments-section">
             <h2>评论 ({{ totalComments }})</h2>
-            
+
             <div v-if="isLoggedIn" class="comment-form">
-              <el-avatar :size="40" :src="userStore.avatar" class="comment-avatar" />
+              <el-avatar :size="40" :src="userStore.avatar" class="comment-avatar"/>
               <el-input
-                v-model="commentContent"
-                type="textarea"
-                :rows="2"
-                placeholder="发表评论..."
-                resize="none"
+                  v-model="commentContent"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="发表评论..."
+                  resize="none"
               />
               <el-button
-                type="primary"
-                :disabled="!commentContent.trim()"
-                @click="submitComment"
-                :loading="submittingComment"
+                  type="primary"
+                  :disabled="!commentContent.trim()"
+                  @click="submitComment"
+                  :loading="submittingComment"
               >
                 发表
               </el-button>
             </div>
             <div v-else class="login-to-comment">
-              请<el-button type="text" @click="openLoginDialog">登录</el-button>后发表评论
+              请
+              <el-button type="text" @click="openLoginDialog">登录</el-button>
+              后发表评论
             </div>
-            
+
             <div v-if="comments.length > 0" class="comments-list">
-              <el-divider />
+              <el-divider/>
               <div v-for="comment in comments" :key="comment.id" class="comment-item">
-                <el-avatar :size="40" :src="comment.userAvatar || defaultAvatar" class="comment-avatar" />
+                <el-avatar :size="40" :src="comment.userAvatar || defaultAvatar" class="comment-avatar"/>
                 <div class="comment-content">
                   <div class="comment-header">
                     <span class="comment-author">{{ comment.username }}</span>
@@ -134,56 +98,56 @@
                   <p class="comment-text">{{ comment.content }}</p>
                   <div class="comment-actions">
                     <el-button
-                      type="text"
-                      size="small"
-                      @click="toggleReplyForm(comment.id)"
+                        type="text"
+                        size="small"
+                        @click="toggleReplyForm(comment.id)"
                     >
                       回复
                     </el-button>
                     <el-button
-                      type="text"
-                      size="small"
-                      @click="likeComment(comment.id)"
-                      :disabled="comment.liked"
+                        type="text"
+                        size="small"
+                        @click="likeComment(comment.id)"
+                        :disabled="comment.liked"
                     >
                       {{ comment.likes > 0 ? `点赞(${comment.likes})` : '点赞' }}
                     </el-button>
                     <el-button
-                      v-if="canDeleteComment(comment)"
-                      type="text"
-                      size="small"
-                      @click="removeComment(comment.id)"
+                        v-if="canDeleteComment(comment)"
+                        type="text"
+                        size="small"
+                        @click="removeComment(comment.id)"
                     >
                       删除
                     </el-button>
                   </div>
-                  
+
                   <div v-if="replyingTo === comment.id" class="reply-form">
                     <el-input
-                      v-model="replyContent"
-                      type="textarea"
-                      :rows="2"
-                      placeholder="回复评论..."
-                      resize="none"
-                      size="small"
+                        v-model="replyContent"
+                        type="textarea"
+                        :rows="2"
+                        placeholder="回复评论..."
+                        resize="none"
+                        size="small"
                     />
                     <div class="reply-actions">
                       <el-button size="small" @click="cancelReply">取消</el-button>
                       <el-button
-                        type="primary"
-                        size="small"
-                        :disabled="!replyContent.trim()"
-                        @click="submitReply(comment.id)"
-                        :loading="submittingReply"
+                          type="primary"
+                          size="small"
+                          :disabled="!replyContent.trim()"
+                          @click="submitReply(comment.id)"
+                          :loading="submittingReply"
                       >
                         回复
                       </el-button>
                     </div>
                   </div>
-                  
+
                   <div v-if="comment.replies && comment.replies.length > 0" class="replies-list">
                     <div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
-                      <el-avatar :size="30" :src="reply.userAvatar || defaultAvatar" class="reply-avatar" />
+                      <el-avatar :size="30" :src="reply.userAvatar || defaultAvatar" class="reply-avatar"/>
                       <div class="reply-content">
                         <div class="reply-header">
                           <span class="reply-author">{{ reply.username }}</span>
@@ -192,10 +156,10 @@
                         <p class="reply-text">{{ reply.content }}</p>
                         <div class="reply-actions">
                           <el-button
-                            v-if="canDeleteComment(reply)"
-                            type="text"
-                            size="small"
-                            @click="removeComment(reply.id)"
+                              v-if="canDeleteComment(reply)"
+                              type="text"
+                              size="small"
+                              @click="removeComment(reply.id)"
                           >
                             删除
                           </el-button>
@@ -204,14 +168,14 @@
                     </div>
                   </div>
                 </div>
-        </div>
+              </div>
 
               <div class="pagination" v-if="totalComments > 10">
                 <el-pagination
-                  layout="prev, pager, next"
-                  :total="totalComments"
-                  :page-size="10"
-                  @current-change="handleCommentPageChange"
+                    layout="prev, pager, next"
+                    :total="totalComments"
+                    :page-size="10"
+                    @current-change="handleCommentPageChange"
                 />
               </div>
             </div>
@@ -219,22 +183,22 @@
               暂无评论，快来发表第一条评论吧！
             </div>
             <div v-else class="loading-comments">
-              <el-skeleton animated :rows="3" />
+              <el-skeleton animated :rows="3"/>
             </div>
           </div>
 
           <div class="related-videos" v-if="relatedVideos.length > 0">
-          <h2>相关视频</h2>
-          <el-row :gutter="20">
+            <h2>相关视频</h2>
+            <el-row :gutter="20">
               <el-col :span="6" v-for="relatedVideo in relatedVideos" :key="relatedVideo.id">
                 <el-card class="video-card" shadow="hover" @click="goToVideo(relatedVideo.id)">
-                <div class="video-thumbnail">
-                  <el-image
-                      :src="relatedVideo.coverUrl || 'https://via.placeholder.com/320x180'"
-                    fit="cover"
-                  />
-                </div>
-                <div class="video-info">
+                  <div class="video-thumbnail">
+                    <el-image
+                        :src="relatedVideo.coverUrl || 'https://via.placeholder.com/320x180'"
+                        fit="cover"
+                    />
+                  </div>
+                  <div class="video-info">
                     <h3>{{ relatedVideo.title }}</h3>
                     <p>{{ relatedVideo.uploaderName }}</p>
                     <p class="video-stats">
@@ -242,10 +206,10 @@
                       <span class="dot">·</span>
                       <span>{{ formatNumber(relatedVideo.likes) }} 赞</span>
                     </p>
-                </div>
-              </el-card>
-            </el-col>
-          </el-row>
+                  </div>
+                </el-card>
+              </el-col>
+            </el-row>
           </div>
         </div>
       </el-main>
@@ -254,15 +218,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Star, Share } from '@element-plus/icons-vue'
-import { getVideoDetail, incrementViews, likeVideo, getVideosByCategory, getLatestVideos } from '../api/video'
-import { getUserInfo, subscribeUser, unsubscribeUser, isSubscribed as checkIsSubscribed, getSubscriberCount } from '../api/user'
-import { useUserStore } from '../store/user'
-import { getVideoComments, postComment, deleteComment, replyComment, likeComment as likeCommentApi } from '../api/comment'
-import { formatCategory, formatAvatarUrl } from '../utils/videoUtils'
+import {ref, onMounted, computed, watch} from 'vue'
+import {useRouter, useRoute} from 'vue-router'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {Star, Share} from '@element-plus/icons-vue'
+import {getVideoDetail, incrementViews, likeVideo, getVideosByCategory, getLatestVideos} from '../api/video'
+import {
+  getUserInfo,
+  subscribeUser,
+  unsubscribeUser,
+  isSubscribed as checkIsSubscribed,
+  getSubscriberCount
+} from '../api/user'
+import {useUserStore} from '../store/user'
+import {getVideoComments, postComment, deleteComment, replyComment, likeComment as likeCommentApi} from '../api/comment'
+import {formatCategory, formatAvatarUrl} from '../utils/videoUtils'
 
 const router = useRouter()
 const route = useRoute()
@@ -317,20 +287,20 @@ const loadVideoDetail = async () => {
   try {
     loading.value = true
     const videoId = route.params.id
-    
+
     if (!videoId) {
       ElMessage.error('视频ID无效')
       router.push('/')
       return
     }
-    
+
     console.log('正在加载视频ID:', videoId)
     const response = await getVideoDetail(videoId)
     console.log('视频详情接口返回数据:', response)
-    
+
     if (response.success && response.data && response.data.video) {
       const videoData = response.data.video
-      
+
       // 设置默认值，避免null值导致的问题
       video.value = {
         id: videoData.id,
@@ -348,7 +318,7 @@ const loadVideoDetail = async () => {
         tags: videoData.tags || '',
         tagList: videoData.tagList || []
       }
-      
+
       // 不依赖上传者信息，直接加载相关视频
       await loadRelatedVideos()
     } else {
@@ -370,7 +340,7 @@ const loadRelatedVideos = async () => {
     // 如果有分类，则加载同类视频；否则加载最新视频
     if (video.value.category && video.value.category !== '未分类') {
       const response = await getVideosByCategory(video.value.category, 1, 4)
-      
+
       if (response.success && response.data && response.data.videos) {
         // 过滤掉当前视频
         relatedVideos.value = response.data.videos.filter(item => item.id !== video.value.id).slice(0, 4)
@@ -378,7 +348,7 @@ const loadRelatedVideos = async () => {
     } else {
       // 如果没有分类，则加载最新视频
       const response = await getLatestVideos()
-      
+
       if (response.success && response.data && response.data.videos) {
         // 过滤掉当前视频
         relatedVideos.value = response.data.videos.filter(item => item.id !== video.value.id).slice(0, 4)
@@ -414,16 +384,16 @@ const handleLikeVideo = async () => {
     });
     return;
   }
-  
+
   if (likeClicked.value) {
     return;
   }
-  
+
   try {
     if (!video.value.id) return;
-    
+
     const response = await likeVideo(video.value.id);
-    
+
     if (response.success) {
       video.value.likes++;
       likeClicked.value = true;
@@ -439,7 +409,7 @@ const handleLikeVideo = async () => {
 // 跳转到其他视频
 const goToVideo = (videoId) => {
   if (videoId === video.value.id) return
-  router.push({ path: `/video/${videoId}` })
+  router.push({path: `/video/${videoId}`})
   // 滚动到顶部
   window.scrollTo(0, 0)
   // 注意：不需要手动调用loadVideoDetail，由路由监听器处理
@@ -459,7 +429,7 @@ const formatNumber = (num) => {
 // 格式化日期
 const formatDate = (dateString) => {
   if (!dateString) return ''
-  
+
   const date = new Date(dateString)
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -483,14 +453,14 @@ const handleShareVideo = () => {
   input.select()
   document.execCommand('copy')
   document.body.removeChild(input)
-  
+
   ElMessage.success('视频链接已复制到剪贴板')
 }
 
 // 跳转到用户主页
 const goToUserProfile = () => {
   if (video.value.userId) {
-    router.push({ path: `/user/${video.value.userId}` })
+    router.push({path: `/user/${video.value.userId}`})
   }
 }
 
@@ -506,21 +476,21 @@ const handleSubscribe = async () => {
     });
     return;
   }
-  
+
   if (isCurrentUser.value) {
     ElMessage.warning('不能关注自己');
     return;
   }
-  
+
   try {
     console.log('当前订阅状态:', isSubscribed.value ? '已订阅' : '未订阅');
-    
+
     if (isSubscribed.value) {
       // 取消关注
       console.log('开始取消关注用户:', video.value.userId);
       const response = await unsubscribeUser(video.value.userId);
       console.log('取消关注响应:', response);
-      
+
       if (response.success) {
         isSubscribed.value = false;
         uploaderSubscribers.value = Math.max(0, uploaderSubscribers.value - 1);
@@ -552,20 +522,20 @@ const openLoginDialog = () => {
   // 重定向到登录页面
   router.push({
     path: '/',
-    query: { login: 'true', redirect: router.currentRoute.value.fullPath }
+    query: {login: 'true', redirect: router.currentRoute.value.fullPath}
   });
 }
 
 // 加载评论列表
 const loadComments = async (page = 1) => {
   if (!video.value.id) return
-  
+
   try {
     loadingComments.value = true
     commentPage.value = page
-    
+
     const response = await getVideoComments(video.value.id, page, 10)
-    
+
     if (response.success) {
       comments.value = response.data.comments || []
       totalComments.value = response.data.total || 0
@@ -592,20 +562,20 @@ const submitComment = async () => {
     });
     return;
   }
-  
+
   if (!commentContent.value.trim()) {
     ElMessage.warning('评论内容不能为空')
     return
   }
-  
+
   try {
     submittingComment.value = true
-    
+
     const response = await postComment({
       videoId: video.value.id,
       content: commentContent.value.trim()
     })
-    
+
     if (response.success) {
       ElMessage.success('评论发表成功')
       commentContent.value = ''
@@ -634,7 +604,7 @@ const toggleReplyForm = (commentId) => {
     });
     return;
   }
-  
+
   if (replyingTo.value === commentId) {
     replyingTo.value = null
     replyContent.value = ''
@@ -662,21 +632,21 @@ const submitReply = async (commentId) => {
     });
     return;
   }
-  
+
   if (!replyContent.value.trim()) {
     ElMessage.warning('回复内容不能为空')
     return
   }
-  
+
   try {
     submittingReply.value = true
-    
+
     const response = await replyComment({
       videoId: video.value.id,
       parentId: commentId,
       content: replyContent.value.trim()
     })
-    
+
     if (response.success) {
       ElMessage.success('回复发表成功')
       replyContent.value = ''
@@ -702,9 +672,9 @@ const removeComment = async (commentId) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     const response = await deleteComment(commentId)
-    
+
     if (response.success) {
       ElMessage.success('评论已删除')
       // 重新加载评论列表
@@ -732,10 +702,10 @@ const likeComment = async (commentId) => {
     });
     return;
   }
-  
+
   try {
     const response = await likeCommentApi(commentId)
-    
+
     if (response.success) {
       // 更新评论列表中的点赞数
       const comment = findComment(commentId)
@@ -757,7 +727,7 @@ const findComment = (commentId) => {
   // 在主评论中查找
   let comment = comments.value.find(c => c.id === commentId)
   if (comment) return comment
-  
+
   // 在回复中查找
   for (const c of comments.value) {
     if (c.replies) {
@@ -765,17 +735,17 @@ const findComment = (commentId) => {
       if (comment) return comment
     }
   }
-  
+
   return null
 }
 
 // 检查是否可以删除评论
 const canDeleteComment = (comment) => {
   if (!isLoggedIn.value || !userStore.user) return false
-  
+
   // 当前用户是评论作者，或者是视频上传者
-  return userStore.user.id === comment.userId || 
-         (video.value.userId && userStore.user.id === video.value.userId)
+  return userStore.user.id === comment.userId ||
+      (video.value.userId && userStore.user.id === video.value.userId)
 }
 
 // 评论分页切换
@@ -786,33 +756,33 @@ const handleCommentPageChange = (page) => {
 // 格式化评论日期
 const formatCommentDate = (dateString) => {
   if (!dateString) return ''
-  
+
   const date = new Date(dateString)
   const now = new Date()
-  
+
   // 计算时间差（毫秒）
   const diff = now - date
-  
+
   // 小于1分钟
   if (diff < 60 * 1000) {
     return '刚刚'
   }
-  
+
   // 小于1小时
   if (diff < 60 * 60 * 1000) {
     return `${Math.floor(diff / (60 * 1000))}分钟前`
   }
-  
+
   // 小于24小时
   if (diff < 24 * 60 * 60 * 1000) {
     return `${Math.floor(diff / (60 * 60 * 1000))}小时前`
   }
-  
+
   // 小于30天
   if (diff < 30 * 24 * 60 * 60 * 1000) {
     return `${Math.floor(diff / (24 * 60 * 60 * 1000))}天前`
   }
-  
+
   // 大于30天，显示具体日期
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -835,36 +805,36 @@ onMounted(() => {
 
 // 监听路由参数变化，当视频ID变化时重新加载
 watch(
-  () => route.params.id,
-  (newId, oldId) => {
-    if (newId && newId !== oldId) {
-      console.log('视频ID变化，重新加载视频:', newId);
-      // 重置状态
-      isSubscribed.value = false;
-      likeClicked.value = false;
-      viewIncremented.value = false;
-      // 直接加载新视频，API会返回完整的用户信息
-      loadVideoDetail();
+    () => route.params.id,
+    (newId, oldId) => {
+      if (newId && newId !== oldId) {
+        console.log('视频ID变化，重新加载视频:', newId);
+        // 重置状态
+        isSubscribed.value = false;
+        likeClicked.value = false;
+        viewIncremented.value = false;
+        // 直接加载新视频，API会返回完整的用户信息
+        loadVideoDetail();
+      }
     }
-  }
 )
 
 // 监听登录状态变化
 watch(
-  () => userStore.isLoggedIn,
-  (newLoginState) => {
-    if (video.value.userId && newLoginState) {
-      console.log('登录状态变化，重新检查订阅状态');
-      // 检查订阅状态
-      checkSubscriptionStatus();
+    () => userStore.isLoggedIn,
+    (newLoginState) => {
+      if (video.value.userId && newLoginState) {
+        console.log('登录状态变化，重新检查订阅状态');
+        // 检查订阅状态
+        checkSubscriptionStatus();
+      }
     }
-  }
 )
 
 // 检查订阅状态
 const checkSubscriptionStatus = async () => {
   if (!isLoggedIn.value || !video.value.userId) return;
-  
+
   try {
     const subscriptionResponse = await checkIsSubscribed(video.value.userId);
     if (subscriptionResponse.success) {
@@ -879,16 +849,16 @@ const checkSubscriptionStatus = async () => {
 
 // 监听token变化
 watch(
-  () => userStore.token,
-  (newToken) => {
-    if (video.value.userId && newToken) {
-      console.log('认证Token变化，重新检查订阅状态');
-      // 延迟一小段时间再重新检查，确保token已经被设置到headers中
-      setTimeout(() => {
-        checkSubscriptionStatus();
-      }, 500);
+    () => userStore.token,
+    (newToken) => {
+      if (video.value.userId && newToken) {
+        console.log('认证Token变化，重新检查订阅状态');
+        // 延迟一小段时间再重新检查，确保token已经被设置到headers中
+        setTimeout(() => {
+          checkSubscriptionStatus();
+        }, 500);
+      }
     }
-  }
 )
 </script>
 
@@ -1196,5 +1166,22 @@ watch(
   padding: 10px;
   background-color: #f9f9f9;
   border-radius: 8px;
+}
+
+.video-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.video-info-row .video-stats {
+  margin: 0;
+}
+
+.video-info-row .video-actions-simple {
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
 }
 </style>
