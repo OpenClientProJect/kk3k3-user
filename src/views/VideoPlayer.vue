@@ -39,12 +39,12 @@
           </p>
           <el-divider />
             
-            <div class="author-info">
+            <div class="author-info" v-if="video.uploaderName !== '未知上传者'">
               <div class="author-avatar-container">
                 <el-avatar :size="50" :src="uploaderAvatar" />
               </div>
               <div class="author-details">
-                <h3 class="author-name"  style="cursor: pointer">{{ video.uploaderName }}</h3>
+                <h3 class="author-name" style="cursor: pointer">{{ video.uploaderName }}</h3>
                 <p class="upload-date">上传于 {{ formatDate(video.createTime) }}</p>
                 <p v-if="uploaderSubscribers" class="subscriber-count">{{ formatNumber(uploaderSubscribers) }} 位关注者</p>
               </div>
@@ -69,6 +69,23 @@
                   分享
                 </el-button>
               </div>
+            </div>
+            
+            <!-- 简化版本的操作区域，当没有上传者信息时显示 -->
+            <div class="video-actions-simple" v-else>
+              <el-button 
+                type="danger" 
+                :icon="Star" 
+                @click="handleLikeVideo"
+                :disabled="likeClicked">
+                {{ formatNumber(video.likes) }} 赞
+              </el-button>
+              <el-button 
+                type="default" 
+                :icon="Share" 
+                @click="handleShareVideo">
+                分享
+              </el-button>
             </div>
             
             <el-divider />
@@ -241,7 +258,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Star, Share } from '@element-plus/icons-vue'
-import { getVideoDetail, incrementViews, likeVideo, getVideosByCategory } from '../api/video'
+import { getVideoDetail, incrementViews, likeVideo, getVideosByCategory, getLatestVideos } from '../api/video'
 import { getUserInfo, subscribeUser, unsubscribeUser, isSubscribed as checkIsSubscribed, getSubscriberCount } from '../api/user'
 import { useUserStore } from '../store/user'
 import { getVideoComments, postComment, deleteComment, replyComment, likeComment as likeCommentApi } from '../api/comment'
@@ -307,56 +324,39 @@ const loadVideoDetail = async () => {
       return
     }
     
+    console.log('正在加载视频ID:', videoId)
     const response = await getVideoDetail(videoId)
+    console.log('视频详情接口返回数据:', response)
     
-    if (response.success && response.data) {
-      // 适配新的数据结构
-      const { video: videoData, userInfo } = response.data
+    if (response.success && response.data && response.data.video) {
+      const videoData = response.data.video
+      
+      // 设置默认值，避免null值导致的问题
       video.value = {
         id: videoData.id,
-        title: videoData.title,
-        description: videoData.description,
+        title: videoData.title || '无标题视频',
+        description: videoData.description || '暂无描述',
         videoUrl: videoData.videoUrl,
         coverUrl: videoData.coverUrl,
-        views: videoData.views,
-        likes: videoData.likes,
+        views: videoData.views || 0,
+        likes: videoData.likes || 0,
         createTime: videoData.createTime,
-        uploaderName: videoData.uploaderName,
-        userId: videoData.userId,
-        category: videoData.category,
-        tags: videoData.tags,
+        // 使用默认值处理null的情况
+        uploaderName: videoData.uploaderName || '未知上传者',
+        userId: videoData.userId || 0,
+        category: videoData.category || '未分类',
+        tags: videoData.tags || '',
         tagList: videoData.tagList || []
       }
       
-      // 设置上传者信息
-      // 从API返回的userInfo直接获取头像URL
-      uploaderAvatar.value = userInfo.avatarUrl
-      
-      // 获取用户的粉丝数
-      try {
-        const subscriberResponse = await getSubscriberCount(video.value.userId);
-        if (subscriberResponse.success) {
-          uploaderSubscribers.value = subscriberResponse.data;
-        }
-      } catch (error) {
-        console.error('获取粉丝数失败:', error);
-        // 获取粉丝数失败不影响页面其他功能
-        uploaderSubscribers.value = 0;
-      }
-      
-      // 检查订阅状态，仅对已登录用户执行
-      if (isLoggedIn.value) {
-        await checkSubscriptionStatus();
-      } else {
-        isSubscribed.value = false;
-      }
-      
-      // 加载相关视频（同类别的视频）
+      // 不依赖上传者信息，直接加载相关视频
       await loadRelatedVideos()
     } else {
+      ElMessage.error(response.message || '获取视频详情失败')
       await router.push('/')
     }
   } catch (error) {
+    console.error('视频详情加载错误:', error)
     ElMessage.error('获取视频详情失败，请稍后重试')
     await router.push('/')
   } finally {
@@ -367,8 +367,17 @@ const loadVideoDetail = async () => {
 // 加载相关视频
 const loadRelatedVideos = async () => {
   try {
-    if (video.value.category) {
+    // 如果有分类，则加载同类视频；否则加载最新视频
+    if (video.value.category && video.value.category !== '未分类') {
       const response = await getVideosByCategory(video.value.category, 1, 4)
+      
+      if (response.success && response.data && response.data.videos) {
+        // 过滤掉当前视频
+        relatedVideos.value = response.data.videos.filter(item => item.id !== video.value.id).slice(0, 4)
+      }
+    } else {
+      // 如果没有分类，则加载最新视频
+      const response = await getLatestVideos()
       
       if (response.success && response.data && response.data.videos) {
         // 过滤掉当前视频
@@ -1177,5 +1186,15 @@ watch(
   margin-top: 20px;
   display: flex;
   justify-content: center;
+}
+
+.video-actions-simple {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
 }
 </style>
