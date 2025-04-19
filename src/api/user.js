@@ -38,17 +38,6 @@ export function logout() {
 }
 
 /**
- * 刷新令牌
- * @returns {Promise} 响应结果，包含新的令牌
- */
-export function refreshToken() {
-  return request({
-    url: '/api/account/refresh-token',
-    method: 'post'
-  })
-}
-
-/**
  * 获取当前登录用户信息
  * @returns {Promise} 响应结果
  */
@@ -85,16 +74,6 @@ export function updateUserInfoService(id, data) {
   })
 }
 
-/**
- * 获取所有用户（管理员使用）
- * @returns {Promise} 响应结果
- */
-export function getAllUsers() {
-  return request({
-    url: '/api/user/list',
-    method: 'get'
-  })
-}
 
 /**
  * 关注用户
@@ -158,14 +137,3 @@ export function isSubscribed(targetUserId) {
   });
 }
 
-/**
- * 获取用户的粉丝数
- * @param {number} userId - 用户ID
- * @returns {Promise} 响应结果
- */
-export function getSubscriberCount(userId) {
-  return request({
-    url: `/api/user/${userId}/subscriber-count`,
-    method: 'get'
-  })
-} 
