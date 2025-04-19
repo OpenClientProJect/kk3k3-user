@@ -116,21 +116,6 @@ export function likeVideo(id) {
 }
 
 /**
- * 获取视频列表（按分类）
- * @param {string} category - 分类名称
- * @param {number} page - 页码
- * @param {number} size - 每页数量
- * @returns {Promise} 响应结果
- */
-export function getVideosByCategory(category, page = 1, size = 8) {
-  return request({
-    url: '/api/video/category',
-    method: 'get',
-    params: { category, page, size }
-  })
-}
-
-/**
  * 获取最新视频
  * @returns {Promise} 响应结果
  */

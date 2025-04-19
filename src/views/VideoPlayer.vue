@@ -105,14 +105,6 @@
                       回复
                     </el-button>
                     <el-button
-                        type="text"
-                        size="small"
-                        @click="likeComment(comment.id)"
-                        :disabled="comment.liked"
-                    >
-                      {{ comment.likes > 0 ? `点赞(${comment.likes})` : '点赞' }}
-                    </el-button>
-                    <el-button
                         v-if="canDeleteComment(comment)"
                         type="text"
                         size="small"
@@ -186,31 +178,6 @@
               <el-skeleton animated :rows="3"/>
             </div>
           </div>
-
-          <div class="related-videos" v-if="relatedVideos.length > 0">
-            <h2>相关视频</h2>
-            <el-row :gutter="20">
-              <el-col :span="6" v-for="relatedVideo in relatedVideos" :key="relatedVideo.id">
-                <el-card class="video-card" shadow="hover" @click="goToVideo(relatedVideo.id)">
-                  <div class="video-thumbnail">
-                    <el-image
-                        :src="relatedVideo.coverUrl || 'https://via.placeholder.com/320x180'"
-                        fit="cover"
-                    />
-                  </div>
-                  <div class="video-info">
-                    <h3>{{ relatedVideo.title }}</h3>
-                    <p>{{ relatedVideo.uploaderName }}</p>
-                    <p class="video-stats">
-                      <span>{{ formatNumber(relatedVideo.views) }} 播放</span>
-                      <span class="dot">·</span>
-                      <span>{{ formatNumber(relatedVideo.likes) }} 赞</span>
-                    </p>
-                  </div>
-                </el-card>
-              </el-col>
-            </el-row>
-          </div>
         </div>
       </el-main>
     </el-container>
@@ -222,17 +189,14 @@ import {ref, onMounted, computed, watch} from 'vue'
 import {useRouter, useRoute} from 'vue-router'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {Star, Share} from '@element-plus/icons-vue'
-import {getVideoDetail, incrementViews, likeVideo, getVideosByCategory, getLatestVideos} from '../api/video'
+import {getVideoDetail, incrementViews, likeVideo,  getLatestVideos} from '../api/video'
 import {
-  getUserInfo,
   subscribeUser,
   unsubscribeUser,
   isSubscribed as checkIsSubscribed,
-  getSubscriberCount
 } from '../api/user'
 import {useUserStore} from '../store/user'
 import {getVideoComments, postComment, deleteComment, replyComment, likeComment as likeCommentApi} from '../api/comment'
-import {formatCategory, formatAvatarUrl} from '../utils/videoUtils'
 
 const router = useRouter()
 const route = useRoute()
@@ -372,60 +336,6 @@ const handleVideoPlay = async () => {
   }
 }
 
-// 处理点赞
-const handleLikeVideo = async () => {
-  if (!isLoggedIn.value) {
-    ElMessage({
-      message: '请先登录后再点赞',
-      type: 'warning',
-      onClose: () => {
-        openLoginDialog();
-      }
-    });
-    return;
-  }
-
-  if (likeClicked.value) {
-    return;
-  }
-
-  try {
-    if (!video.value.id) return;
-
-    const response = await likeVideo(video.value.id);
-
-    if (response.success) {
-      video.value.likes++;
-      likeClicked.value = true;
-      ElMessage.success('点赞成功');
-    } else {
-      ElMessage.error(response.message || '点赞失败');
-    }
-  } catch (error) {
-    ElMessage.error('点赞失败，请稍后重试');
-  }
-}
-
-// 跳转到其他视频
-const goToVideo = (videoId) => {
-  if (videoId === video.value.id) return
-  router.push({path: `/video/${videoId}`})
-  // 滚动到顶部
-  window.scrollTo(0, 0)
-  // 注意：不需要手动调用loadVideoDetail，由路由监听器处理
-}
-
-// 格式化数字
-const formatNumber = (num) => {
-  if (!num) return 0
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + 'M'
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'K'
-  }
-  return num
-}
-
 // 格式化日期
 const formatDate = (dateString) => {
   if (!dateString) return ''
@@ -457,65 +367,6 @@ const handleShareVideo = () => {
   ElMessage.success('视频链接已复制到剪贴板')
 }
 
-// 跳转到用户主页
-const goToUserProfile = () => {
-  if (video.value.userId) {
-    router.push({path: `/user/${video.value.userId}`})
-  }
-}
-
-// 处理关注/取消关注
-const handleSubscribe = async () => {
-  if (!isLoggedIn.value) {
-    ElMessage({
-      message: '请先登录后再关注',
-      type: 'warning',
-      onClose: () => {
-        openLoginDialog();
-      }
-    });
-    return;
-  }
-
-  if (isCurrentUser.value) {
-    ElMessage.warning('不能关注自己');
-    return;
-  }
-
-  try {
-    console.log('当前订阅状态:', isSubscribed.value ? '已订阅' : '未订阅');
-
-    if (isSubscribed.value) {
-      // 取消关注
-      console.log('开始取消关注用户:', video.value.userId);
-      const response = await unsubscribeUser(video.value.userId);
-      console.log('取消关注响应:', response);
-
-      if (response.success) {
-        isSubscribed.value = false;
-        uploaderSubscribers.value = Math.max(0, uploaderSubscribers.value - 1);
-        ElMessage.success(`已取消关注 ${video.value.uploaderName}`);
-      } else {
-        ElMessage.error(response.message || '取消关注失败');
-      }
-    } else {
-      // 添加关注
-      const response = await subscribeUser(video.value.userId);
-
-      if (response.success) {
-        isSubscribed.value = true;
-        uploaderSubscribers.value++;
-        ElMessage.success(`已成功关注 ${video.value.uploaderName}`);
-      } else {
-        ElMessage.error(response.message || '关注失败');
-        console.error('关注失败:', response.message);
-      }
-    }
-  } catch (error) {
-    console.error('关注操作失败:', error);
-    ElMessage.error('操作失败，请稍后重试');
-  }
-}
 
 // 打开登录对话框
 const openLoginDialog = () => {
@@ -690,37 +541,6 @@ const removeComment = async (commentId) => {
   }
 }
 
-// 点赞评论
-const likeComment = async (commentId) => {
-  if (!isLoggedIn.value) {
-    ElMessage({
-      message: '请先登录后再点赞评论',
-      type: 'warning',
-      onClose: () => {
-        openLoginDialog();
-      }
-    });
-    return;
-  }
-
-  try {
-    const response = await likeCommentApi(commentId)
-
-    if (response.success) {
-      // 更新评论列表中的点赞数
-      const comment = findComment(commentId)
-      if (comment) {
-        comment.likes++
-        comment.liked = true
-      }
-      ElMessage.success('点赞成功')
-    } else {
-      ElMessage.error('点赞失败: ' + response.message)
-    }
-  } catch (error) {
-    ElMessage.error('点赞失败，请稍后重试')
-  }
-}
 
 // 在评论列表中查找评论
 const findComment = (commentId) => {

@@ -66,12 +66,6 @@
               </el-icon>
               个人中心
             </el-dropdown-item>
-            <el-dropdown-item command="upload">
-              <el-icon>
-                <VideoCamera/>
-              </el-icon>
-              上传视频
-            </el-dropdown-item>
             <el-dropdown-item divided command="logout">
               <el-icon>
                 <SwitchButton/>
