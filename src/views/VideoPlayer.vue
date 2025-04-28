@@ -25,8 +25,8 @@
                 ref="videoPlayer"
                 controls
                 class="video-player"
-                :src="video.videoUrl"
-                :poster="video.coverUrl || 'https://via.placeholder.com/1280x720'"
+                :src="currentEpisode.episodesVideo"
+                :poster="currentEpisode.episodesImage || 'https://via.placeholder.com/1280x720'"
             ></video>
           </div>
 
@@ -44,6 +44,21 @@
                   plain
                   @click="handleShareVideo">
                   分享
+                </el-button>
+              </div>
+            </div>
+
+            <!-- 剧集选择器 -->
+            <div v-if="episodes.length > 1" class="episodes-selector">
+              <h3>选集</h3>
+              <div class="episodes-list">
+                <el-button 
+                  v-for="(episode, index) in episodes" 
+                  :key="episode.episodesId"
+                  :class="{ 'active-episode': currentEpisodeIndex === index }"
+                  @click="switchEpisode(index)"
+                  size="small">
+                  第{{ index + 1 }}集
                 </el-button>
               </div>
             </div>
@@ -203,7 +218,7 @@ const video = ref({
   id: null,
   title: '',
   description: '',
-  videoUrl: '',
+  duration: null,
   coverUrl: '',
   views: 0,
   likes: 0,
@@ -213,6 +228,22 @@ const video = ref({
   category: '',
   tags: ''
 })
+// 新增剧集列表
+const episodes = ref([])
+const currentEpisodeIndex = ref(0)
+// 计算当前选中的剧集
+const currentEpisode = computed(() => {
+  if (episodes.value.length === 0) {
+    return {
+      episodesId: null,
+      episodesTitle: '',
+      episodesImage: '',
+      episodesVideo: ''
+    }
+  }
+  return episodes.value[currentEpisodeIndex.value]
+})
+
 const relatedVideos = ref([])
 const viewIncremented = ref(false)
 const shareDialogVisible = ref(false)
@@ -262,7 +293,7 @@ const loadVideoDetail = async () => {
         id: videoData.id,
         title: videoData.title || '无标题视频',
         description: videoData.description || '暂无描述',
-        videoUrl: videoData.videoUrl,
+        duration: videoData.duration,
         coverUrl: videoData.coverUrl,
         views: videoData.views || 0,
         likes: videoData.likes || 0,
@@ -273,6 +304,22 @@ const loadVideoDetail = async () => {
         category: videoData.category || '未分类',
         tags: videoData.tags || '',
         tagList: videoData.tagList || []
+      }
+
+      // 处理剧集数据
+      if (response.data.episodes && response.data.episodes.length > 0) {
+        episodes.value = response.data.episodes
+        currentEpisodeIndex.value = 0
+      } else {
+        // 没有剧集数据，创建一个默认剧集
+        episodes.value = [{
+          episodesId: videoData.id,
+          episodesTitle: videoData.title,
+          episodesImage: videoData.coverUrl,
+          episodesVideo: videoData.videoUrl,
+          createTime: videoData.createTime,
+          videoId: videoData.id
+        }]
       }
 
       // 不依赖上传者信息，直接加载相关视频
@@ -588,6 +635,21 @@ const formatCommentDate = (dateString) => {
     month: 'long',
     day: 'numeric'
   })
+}
+
+// 切换剧集
+const switchEpisode = (index) => {
+  if (index >= 0 && index < episodes.value.length) {
+    currentEpisodeIndex.value = index
+    // 如果视频播放器存在，重置播放进度
+    if (videoPlayer.value) {
+      videoPlayer.value.currentTime = 0
+      // 延迟播放以避免潜在的加载问题
+      setTimeout(() => {
+        videoPlayer.value.play().catch(e => console.log('自动播放被阻止', e))
+      }, 300)
+    }
+  }
 }
 
 // 在加载视频详情后，加载评论列表
@@ -942,5 +1004,30 @@ watch(
   margin: 0;
   padding: 0;
   background-color: transparent;
+}
+
+.episodes-selector {
+  margin: 20px 0;
+}
+
+.episodes-selector h3 {
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.episodes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.episodes-list .el-button {
+  min-width: 60px;
+}
+
+.active-episode {
+  background-color: #409EFF !important;
+  color: white !important;
+  border-color: #409EFF !important;
 }
 </style>
