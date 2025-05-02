@@ -8,8 +8,8 @@
         :default-active="activeIndex"
     >
       <div class="logo-container" @click="goToHome">
-        <img src="../assets/Logo.svg" class="logo" alt="Logo"/>
-        视频平台
+        <img src="../../public/logo.jpg" class="logo" alt="Logo"/>
+        Yuribest
       </div>
       
       <!-- 导航菜单项 -->

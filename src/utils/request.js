@@ -5,7 +5,7 @@ import router from "@/router/index.js";
 
 // 创建axios实例
 const request = axios.create({
-  baseURL: 'http://127.0.0.1:8080',
+  baseURL: 'http://154.40.44.245:8080',
   timeout: 10000,  // 请求超时时间
   withCredentials: true // 允许跨域携带cookie
 })
