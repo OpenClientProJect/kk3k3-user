@@ -52,7 +52,7 @@
       <!-- 已登录状态 -->
       <el-dropdown v-else trigger="click" @command="handleCommand" class="user-dropdown">
         <div class="user-avatar-container">
-          <el-avatar :size="32" :src="userInfo?.avatarUrl || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"/>
+          <el-avatar :size="32" :src="userInfo.avatarUrl"/>
           <span class="username">{{ userStore.nickname }}</span>
           <el-icon class="el-icon--right">
             <arrow-down/>
@@ -143,11 +143,6 @@ const handleSearch = () => {
   })
 }
 
-// 清空搜索框
-const clearSearch = () => {
-  searchKeyword.value = ''
-}
-
 // 接收从URL参数获取搜索关键词
 const setSearchKeywordFromUrl = () => {
   if (route.path === '/search' && route.query.keyword) {
@@ -203,7 +198,10 @@ const handleLogout = () => {
   }).catch(() => {
   })
 }
-const userInfo = ref()
+const userInfo = ref({
+  nickname: '',
+  avatarUrl: '',
+})
 // 检查当前用户信息并更新
 const fetchUserInfo = async () => {
   if (userStore.isLoggedIn) {

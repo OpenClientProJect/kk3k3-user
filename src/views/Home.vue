@@ -8,7 +8,7 @@
                 <el-card class="video-card" shadow="hover" @click="goToVideo(video.id)">
                   <div class="video-thumbnail">
                     <el-image
-                      :src="video.coverUrl || 'https://via.placeholder.com/320x180'"
+                      :src="video.coverUrl "
                       fit="cover"
                     />
                   </div>

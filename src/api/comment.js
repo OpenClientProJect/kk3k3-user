@@ -75,4 +75,12 @@ export function unlikeComment(commentId) {
     url: `/api/comment/${commentId}/unlike`,
     method: 'post'
   })
-} 
+}
+
+//获取评论回复消息
+export function getCommentReplyMessagesService() {
+  return request({
+    url: '/api/comment/reply',
+    method: 'get'
+  })
+}

@@ -33,20 +33,68 @@
         <el-card class="main-content-card">
           <template #header>
             <div class="card-header">
-              <h3>个人资料</h3>
+              <el-tabs v-model="activeTab">
+                <el-tab-pane label="个人资料" name="profile">
+                  <template #label>
+                    <span><el-icon><User /></el-icon> 个人资料</span>
+                  </template>
+                </el-tab-pane>
+                <el-tab-pane label="评论通知" name="notifications">
+                  <template #label>
+                    <span>
+                      <el-icon><Bell /></el-icon> 评论通知
+                      <el-badge v-if="notifications.length > 0" :value="notifications.length" class="notification-badge" />
+                    </span>
+                  </template>
+                </el-tab-pane>
+              </el-tabs>
             </div>
           </template>
           
-          <el-descriptions 
-            :column="2" 
-            border 
-            class="user-description"
-            :size="screenWidth < 768 ? 'small' : 'default'">
-            <el-descriptions-item label="用户名">{{ userInfo.username }}</el-descriptions-item>
-            <el-descriptions-item label="昵称">{{ userInfo.nickname || '未设置' }}</el-descriptions-item>
-            <el-descriptions-item label="注册时间" :span="2">{{ formatDate(userInfo.createTime) }}</el-descriptions-item>
-            <el-descriptions-item label="上次更新" :span="2">{{ formatDate(userInfo.updateTime) }}</el-descriptions-item>
-          </el-descriptions>
+          <!-- 个人资料标签内容 -->
+          <div v-if="activeTab === 'profile'">
+            <el-descriptions 
+              :column="2" 
+              border 
+              class="user-description"
+              :size="screenWidth < 768 ? 'small' : 'default'">
+              <el-descriptions-item label="用户名">{{ userInfo.username }}</el-descriptions-item>
+              <el-descriptions-item label="昵称">{{ userInfo.nickname || '未设置' }}</el-descriptions-item>
+              <el-descriptions-item label="注册时间" :span="2">{{ formatDate(userInfo.createTime) }}</el-descriptions-item>
+              <el-descriptions-item label="上次更新" :span="2">{{ formatDate(userInfo.updateTime) }}</el-descriptions-item>
+            </el-descriptions>
+          </div>
+          
+          <!-- 评论通知标签内容 -->
+          <div v-else-if="activeTab === 'notifications'" class="notifications-container">
+            <div v-if="loadingNotifications" class="loading-notifications">
+              <el-skeleton :rows="3" animated />
+            </div>
+            
+            <div v-else-if="notifications.length === 0" class="empty-notifications">
+              <el-empty description="暂无评论回复通知" />
+            </div>
+            
+            <div v-else class="notifications-list">
+              <div v-for="notification in notifications" :key="notification.id" class="notification-item"
+                   @click="goToVideoComment(notification.videoId, notification.parentId)">
+                <div class="notification-avatar">
+                  <el-avatar :size="40" :src="notification.userAvatar || defaultAvatar">
+                    {{ notification.username && notification.username.substring(0, 1).toUpperCase() }}
+                  </el-avatar>
+                </div>
+                <div class="notification-content">
+                  <div class="notification-header">
+                    <span class="notification-username">{{ notification.username }}</span>
+                    <span class="notification-time">{{ formatNotificationTime(notification.createTime) }}</span>
+                  </div>
+                  <div class="notification-text">
+                    回复了你的评论: {{ notification.content }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -107,6 +155,8 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '../store/user'
 import { getCurrentUser, updateUserInfoService, uploadAvatar as uploadAvatarApi } from "../api/user.js"
 import { formatDate } from '../utils/videoUtils'
+import {getCommentReplyMessagesService} from "@/api/comment.js";
+import {User, Bell} from '@element-plus/icons-vue'  // 导入需要的图标
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -296,6 +346,63 @@ const getUserInfo = async () => {
   }
 }
 
+// 评论回复消息变量
+const notifications = ref([])
+const loadingNotifications = ref(false)
+const activeTab = ref('profile') // 添加标签页，默认显示个人资料
+
+// 获取评论回复消息
+const getCommentReplyMessages = async () => {
+  try {
+    loadingNotifications.value = true
+    const res = await getCommentReplyMessagesService()
+    if (res.code === 200 && res.success) {
+      notifications.value = res.data || []
+      console.log('获取评论回复消息成功:', notifications.value)
+    } else {
+      console.error('获取评论回复消息失败:', res.message)
+    }
+  } catch (error) {
+    console.error('获取评论回复消息失败:', error)
+  } finally {
+    loadingNotifications.value = false
+  }
+}
+
+// 格式化回复时间
+const formatNotificationTime = (dateString) => {
+  if (!dateString) return '未知时间'
+
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return '未知时间'
+
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 跳转到视频评论页面
+const goToVideoComment = (videoId, commentId) => {
+  console.log('跳转到视频评论:', videoId, commentId)
+  
+  // 获取视频ID，如果没有则从父评论ID获取
+  const targetVideoId = videoId || 18 // 如果后端没有返回视频ID，可以使用固定值或从notifications中获取
+  
+  if (!targetVideoId) {
+    ElMessage.warning('无法跳转，视频信息不完整')
+    return
+  }
+  
+  router.push({
+    path: `/video/${targetVideoId}`,
+    query: { commentId }
+  })
+}
+
 // 更新用户信息
 const updateUserInfo = async () => {
   await userFormRef.value.validate(async (valid) => {
@@ -342,6 +449,7 @@ onMounted(() => {
   if (userStore.isLoggedIn) {
     getUserInfo()
   }
+  getCommentReplyMessages()
 })
 </script>
 
@@ -492,6 +600,74 @@ onMounted(() => {
   line-height: 1.4;
 }
 
+/* 通知样式 */
+.notifications-container {
+  min-height: 200px;
+}
+
+.notification-badge {
+  margin-left: 5px;
+}
+
+.notifications-list {
+  margin-top: 15px;
+}
+
+.notification-item {
+  display: flex;
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+  background-color: #f9f9f9;
+}
+
+.notification-avatar {
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-header {
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.notification-username {
+  font-weight: 600;
+  color: #333;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: #909399;
+}
+
+.notification-text {
+  line-height: 1.5;
+  color: #606266;
+  word-break: break-word;
+}
+
+.loading-notifications,
+.empty-notifications {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.empty-notifications {
+  color: #909399;
+}
+
 /* 响应式样式 */
 @media (max-width: 768px) {
   .profile-container {
@@ -505,6 +681,14 @@ onMounted(() => {
   .setting-card {
     height: auto;
     padding: 12px;
+  }
+  
+  .notification-item {
+    padding: 10px;
+  }
+  
+  .notification-text {
+    font-size: 14px;
   }
 }
 </style> 

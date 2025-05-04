@@ -265,9 +265,11 @@ const commentContent = ref('')
 const submittingComment = ref(false)
 const replyingTo = ref(null)
 const replyContent = ref('')
+const commentUserId = ref('')
 const submittingReply = ref(false)
 const commentPage = ref(1)
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+const currentReplyingComment = ref(null) // 新增变量，保存当前正在回复的评论信息
 
 // 加载视频详情
 const loadVideoDetail = async () => {
@@ -416,6 +418,7 @@ const loadComments = async (page = 1) => {
     if (response.success) {
       comments.value = response.data.comments || []
       totalComments.value = response.data.total || 0
+      commentUserId.value = response.data.comments.userId
     } else {
       ElMessage.error('获取评论失败: ' + response.message)
     }
@@ -483,18 +486,27 @@ const toggleReplyForm = (commentId) => {
   }
 
   if (replyingTo.value === commentId) {
-    replyingTo.value = null
-    replyContent.value = ''
+    replyingTo.value = null;
+    replyContent.value = '';
+    currentReplyingComment.value = null; // 清空当前回复评论
   } else {
-    replyingTo.value = commentId
-    replyContent.value = ''
+    replyingTo.value = commentId;
+    replyContent.value = '';
+    
+    // 保存当前正在回复的评论信息
+    const comment = findComment(commentId);
+    if (comment) {
+      currentReplyingComment.value = comment;
+      console.log('正在回复评论:', comment.id, '评论用户ID:', comment.userId);
+    }
   }
 }
 
 // 取消回复
 const cancelReply = () => {
-  replyingTo.value = null
-  replyContent.value = ''
+  replyingTo.value = null;
+  replyContent.value = '';
+  currentReplyingComment.value = null; // 清空当前回复评论
 }
 
 // 提交回复
@@ -515,29 +527,40 @@ const submitReply = async (commentId) => {
     return
   }
 
+  // 获取被回复评论的用户ID
+  const replyToUserId = currentReplyingComment.value ? currentReplyingComment.value.userId : null;
+  
+  if (!replyToUserId) {
+    console.error('无法获取被回复用户ID');
+    ElMessage.error('回复发表失败，无法获取被回复用户信息');
+    return;
+  }
+
   try {
-    submittingReply.value = true
+    submittingReply.value = true;
 
     const response = await replyComment({
       videoId: video.value.id,
       parentId: commentId,
-      content: replyContent.value.trim()
-    })
+      content: replyContent.value.trim(),
+      replyToUserId: replyToUserId // 传递被回复用户的ID
+    });
 
     if (response.success) {
-      ElMessage.success('回复发表成功')
-      replyContent.value = ''
-      replyingTo.value = null
+      ElMessage.success('回复发表成功');
+      replyContent.value = '';
+      replyingTo.value = null;
+      currentReplyingComment.value = null; // 清空当前回复评论
       // 重新加载评论列表
-      await loadComments(commentPage.value)
+      await loadComments(commentPage.value);
     } else {
-      ElMessage.error('回复发表失败: ' + response.message)
+      ElMessage.error('回复发表失败: ' + response.message);
     }
   } catch (error) {
-    console.error('提交回复失败:', error)
-    ElMessage.error('回复发表失败，请稍后重试')
+    console.error('提交回复失败:', error);
+    ElMessage.error('回复发表失败，请稍后重试');
   } finally {
-    submittingReply.value = false
+    submittingReply.value = false;
   }
 }
 
